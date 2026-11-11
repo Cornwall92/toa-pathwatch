@@ -1,0 +1,401 @@
+{
+  "verified_date": "2026-11-11",
+  "invocations": [
+    {
+      "key": "TRY_AGAIN",
+      "ui_index": 0,
+      "background_child": 0,
+      "name": "Try Again",
+      "raid_points": 5,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "PERSISTENCE",
+      "ui_index": 1,
+      "background_child": 3,
+      "name": "Persistence",
+      "raid_points": 10,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "SOFTCORE_RUN",
+      "ui_index": 2,
+      "background_child": 6,
+      "name": "Softcore Run",
+      "raid_points": 15,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "HARDCORE_RUN",
+      "ui_index": 3,
+      "background_child": 9,
+      "name": "Hardcore Run",
+      "raid_points": 25,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "WALK_FOR_IT",
+      "ui_index": 4,
+      "background_child": 12,
+      "name": "Walk for It",
+      "raid_points": 10,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "JOG_FOR_IT",
+      "ui_index": 5,
+      "background_child": 15,
+      "name": "Jog for It",
+      "raid_points": 15,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "RUN_FOR_IT",
+      "ui_index": 6,
+      "background_child": 18,
+      "name": "Run for It",
+      "raid_points": 20,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "SPRINT_FOR_IT",
+      "ui_index": 7,
+      "background_child": 21,
+      "name": "Sprint for It",
+      "raid_points": 25,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "NEED_SOME_HELP",
+      "ui_index": 8,
+      "background_child": 24,
+      "name": "Need Some Help?",
+      "raid_points": 15,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "NEED_LESS_HELP",
+      "ui_index": 9,
+      "background_child": 27,
+      "name": "Need Less Help?",
+      "raid_points": 25,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "NO_HELP_NEEDED",
+      "ui_index": 10,
+      "background_child": 30,
+      "name": "No Help Needed",
+      "raid_points": 40,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "WALK_THE_PATH",
+      "ui_index": 11,
+      "background_child": 33,
+      "name": "Walk the Path",
+      "raid_points": 50,
+      "boss": null,
+      "path_invocation": true
+    },
+    {
+      "key": "PATHSEEKER",
+      "ui_index": 12,
+      "background_child": 36,
+      "name": "Pathseeker",
+      "raid_points": 15,
+      "boss": null,
+      "path_invocation": true
+    },
+    {
+      "key": "PATHFINDER",
+      "ui_index": 13,
+      "background_child": 39,
+      "name": "Pathfinder",
+      "raid_points": 40,
+      "boss": null,
+      "path_invocation": true
+    },
+    {
+      "key": "PATHMASTER",
+      "ui_index": 14,
+      "background_child": 42,
+      "name": "Pathmaster",
+      "raid_points": 50,
+      "boss": null,
+      "path_invocation": true
+    },
+    {
+      "key": "QUIET_PRAYERS",
+      "ui_index": 15,
+      "background_child": 45,
+      "name": "Quiet Prayers",
+      "raid_points": 20,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "DEADLY_PRAYERS",
+      "ui_index": 16,
+      "background_child": 48,
+      "name": "Deadly Prayers",
+      "raid_points": 20,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "ON_A_DIET",
+      "ui_index": 17,
+      "background_child": 51,
+      "name": "On a Diet",
+      "raid_points": 15,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "DEHYDRATION",
+      "ui_index": 18,
+      "background_child": 54,
+      "name": "Dehydration",
+      "raid_points": 30,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "OVERLY_DRAINING",
+      "ui_index": 19,
+      "background_child": 57,
+      "name": "Overly Draining",
+      "raid_points": 15,
+      "boss": null,
+      "path_invocation": false
+    },
+    {
+      "key": "LIVELY_LARVAE",
+      "ui_index": 20,
+      "background_child": 60,
+      "name": "Lively Larvae",
+      "raid_points": 5,
+      "boss": "KEPHRI",
+      "path_invocation": false
+    },
+    {
+      "key": "MORE_OVERLORDS",
+      "ui_index": 21,
+      "background_child": 63,
+      "name": "More Overlords",
+      "raid_points": 15,
+      "boss": "KEPHRI",
+      "path_invocation": false
+    },
+    {
+      "key": "BLOWING_MUD",
+      "ui_index": 22,
+      "background_child": 66,
+      "name": "Blowing Mud",
+      "raid_points": 10,
+      "boss": "KEPHRI",
+      "path_invocation": false
+    },
+    {
+      "key": "MEDIC",
+      "ui_index": 23,
+      "background_child": 69,
+      "name": "Medic!",
+      "raid_points": 15,
+      "boss": "KEPHRI",
+      "path_invocation": false
+    },
+    {
+      "key": "AERIAL_ASSAULT",
+      "ui_index": 24,
+      "background_child": 72,
+      "name": "Aerial Assault",
+      "raid_points": 10,
+      "boss": "KEPHRI",
+      "path_invocation": false
+    },
+    {
+      "key": "NOT_JUST_A_HEAD",
+      "ui_index": 25,
+      "background_child": 75,
+      "name": "Not Just a Head",
+      "raid_points": 15,
+      "boss": "ZEBAK",
+      "path_invocation": false
+    },
+    {
+      "key": "ARTERIAL_SPRAY",
+      "ui_index": 26,
+      "background_child": 78,
+      "name": "Arterial Spray",
+      "raid_points": 10,
+      "boss": "ZEBAK",
+      "path_invocation": false
+    },
+    {
+      "key": "BLOOD_THINNERS",
+      "ui_index": 27,
+      "background_child": 81,
+      "name": "Blood Thinners",
+      "raid_points": 5,
+      "boss": "ZEBAK",
+      "path_invocation": false
+    },
+    {
+      "key": "UPSET_STOMACH",
+      "ui_index": 28,
+      "background_child": 84,
+      "name": "Upset Stomach",
+      "raid_points": 15,
+      "boss": "ZEBAK",
+      "path_invocation": false
+    },
+    {
+      "key": "DOUBLE_TROUBLE",
+      "ui_index": 29,
+      "background_child": 87,
+      "name": "Double Trouble",
+      "raid_points": 20,
+      "boss": "AKKHA",
+      "path_invocation": false
+    },
+    {
+      "key": "KEEP_BACK",
+      "ui_index": 30,
+      "background_child": 90,
+      "name": "Keep Back",
+      "raid_points": 10,
+      "boss": "AKKHA",
+      "path_invocation": false
+    },
+    {
+      "key": "STAY_VIGILANT",
+      "ui_index": 31,
+      "background_child": 93,
+      "name": "Stay Vigilant",
+      "raid_points": 15,
+      "boss": "AKKHA",
+      "path_invocation": false
+    },
+    {
+      "key": "FEELING_SPECIAL",
+      "ui_index": 32,
+      "background_child": 96,
+      "name": "Feeling Special?",
+      "raid_points": 20,
+      "boss": "AKKHA",
+      "path_invocation": false
+    },
+    {
+      "key": "MIND_THE_GAP",
+      "ui_index": 33,
+      "background_child": 99,
+      "name": "Mind the Gap!",
+      "raid_points": 10,
+      "boss": "BABA",
+      "path_invocation": false
+    },
+    {
+      "key": "GOTTA_HAVE_FAITH",
+      "ui_index": 34,
+      "background_child": 102,
+      "name": "Gotta Have Faith",
+      "raid_points": 10,
+      "boss": "BABA",
+      "path_invocation": false
+    },
+    {
+      "key": "JUNGLE_JAPES",
+      "ui_index": 35,
+      "background_child": 105,
+      "name": "Jungle Japes",
+      "raid_points": 5,
+      "boss": "BABA",
+      "path_invocation": false
+    },
+    {
+      "key": "SHAKING_THINGS_UP",
+      "ui_index": 36,
+      "background_child": 108,
+      "name": "Shaking Things Up",
+      "raid_points": 10,
+      "boss": "BABA",
+      "path_invocation": false
+    },
+    {
+      "key": "BOULDERDASH",
+      "ui_index": 37,
+      "background_child": 111,
+      "name": "Boulderdash",
+      "raid_points": 10,
+      "boss": "BABA",
+      "path_invocation": false
+    },
+    {
+      "key": "ANCIENT_HASTE",
+      "ui_index": 38,
+      "background_child": 114,
+      "name": "Ancient Haste",
+      "raid_points": 10,
+      "boss": "WARDENS",
+      "path_invocation": false
+    },
+    {
+      "key": "ACCELERATION",
+      "ui_index": 39,
+      "background_child": 117,
+      "name": "Acceleration",
+      "raid_points": 10,
+      "boss": "WARDENS",
+      "path_invocation": false
+    },
+    {
+      "key": "PENETRATION",
+      "ui_index": 40,
+      "background_child": 120,
+      "name": "Penetration",
+      "raid_points": 10,
+      "boss": "WARDENS",
+      "path_invocation": false
+    },
+    {
+      "key": "OVERCLOCKED",
+      "ui_index": 41,
+      "background_child": 123,
+      "name": "Overclocked",
+      "raid_points": 10,
+      "boss": "WARDENS",
+      "path_invocation": false
+    },
+    {
+      "key": "OVERCLOCKED_2",
+      "ui_index": 42,
+      "background_child": 126,
+      "name": "Overclocked 2",
+      "raid_points": 10,
+      "boss": "WARDENS",
+      "path_invocation": false
+    },
+    {
+      "key": "INSANITY",
+      "ui_index": 43,
+      "background_child": 129,
+      "name": "Insanity",
+      "raid_points": 50,
+      "boss": "WARDENS",
+      "path_invocation": false
+    }
+  ]
+}
