@@ -2,7 +2,7 @@
 
 ![ToA Pathwatch](icon.png)
 
-Version 0.1.1 — invocation capture fix.
+Version 0.1.2 — invocation tablet icon.
 
 A movable RuneLite panel showing the current ToA boss's selected invocations,
 active path-levelling invocations, and a static explanation of that path level's effects.
@@ -29,6 +29,11 @@ The initial Plugin Hub submission was merged in
 [PR #20523](https://github.com/runelite/plugin-hub/pull/20523). Source updates need
 a separate Hub manifest update before RuneLite distributes them. Copying a JAR
 into ordinary RuneLite folders does not install it as a Hub plugin.
+
+## Changes in 0.1.2
+
+- Replaces the square emblem with the invocation tablet artwork: four boss symbols
+  and a path-level chevron, exported as a transparent 48 × 72 px Plugin Hub icon.
 
 ## Changes in 0.1.1
 
