@@ -10,9 +10,12 @@ import net.runelite.api.widgets.Widget;
 
 public final class InvocationReader
 {
-	// Observed by the ToA Invocation Display author for non-leaders. See RESEARCH.md.
-	private static final int ACTIVE_LABEL_COLOR = 0xD39034;
+	// CS2 scripts 6750/6751: label colours and the callback carrying leader selection state.
+	private static final int ACTIVE_LABEL_COLOR = 0xD39F34;
+	private static final int INACTIVE_LABEL_COLOR = 0x9F9F9F;
 	private static final Pattern SINGLE_NUMBER = Pattern.compile("^(?:Raid [Ll]evel:?\\s*)?(\\d+)$");
+	// Script 6729 appends the active invocation count, e.g. "Raid Level: 250 (16)".
+	private static final Pattern PARTY_SCORE = Pattern.compile("^(?:Raid [Ll]evel:?\\s*)?(\\d+)(?:\\s+\\(\\d+\\))?$");
 
 	private InvocationReader() {}
 
@@ -39,21 +42,20 @@ public final class InvocationReader
 				return null; // Ambiguous or partially rebuilt layout.
 			}
 			Widget background = children[i - 2];
-			Object[] args = background == null ? null : background.getOnOpListener();
-			Boolean active = null;
-			if (args != null && args.length >= 4)
-			{
-				if (Integer.valueOf(1).equals(args[3])) active = true;
-				else if (Integer.valueOf(0).equals(args[3])) active = false;
-			}
+			Boolean active = background == null ? null : listenerState(background.getOnOpListener(), 6754, 3);
 			if (active == null)
 			{
+				// Non-leader labels keep their state colours on hover (scripts 6752/6753).
+				// Leader labels can turn white, but their 6754 callback above retains the state.
 				usedColor = true;
-				active = label.getTextColor() == ACTIVE_LABEL_COLOR;
+				int color = label.getTextColor();
+				if (color == ACTIVE_LABEL_COLOR) active = true;
+				else if (color == INACTIVE_LABEL_COLOR) active = false;
+				else return null; // Unknown/hover styling is not an inactive selection.
 			}
 			states.put(invocation, active);
 		}
-		Integer points = number(client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL));
+		Integer points = readNumber(client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL), PARTY_SCORE);
 		if (points == null)
 		{
 			points = number(client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL_INVOCATIONS));
@@ -67,12 +69,25 @@ public final class InvocationReader
 		return InvocationSelection.validate(states, points);
 	}
 
+	private static Boolean listenerState(Object[] args, int scriptId, int stateIndex)
+	{
+		if (args == null || args.length <= stateIndex || !Integer.valueOf(scriptId).equals(args[0])) return null;
+		if (Integer.valueOf(1).equals(args[stateIndex])) return true;
+		if (Integer.valueOf(0).equals(args[stateIndex])) return false;
+		return null;
+	}
+
 	public static Integer number(Widget widget)
+	{
+		return readNumber(widget, SINGLE_NUMBER);
+	}
+
+	private static Integer readNumber(Widget widget, Pattern pattern)
 	{
 		if (widget == null || widget.isHidden()) return null;
 		String text = widget.getText();
 		if (text == null) return null;
-		Matcher matcher = SINGLE_NUMBER.matcher(text.replaceAll("<[^>]*>", "").trim());
+		Matcher matcher = pattern.matcher(text.replaceAll("<[^>]*>", "").trim());
 		if (!matcher.matches()) return null;
 		try { return Integer.valueOf(matcher.group(1)); }
 		catch (NumberFormatException ex) { return null; }

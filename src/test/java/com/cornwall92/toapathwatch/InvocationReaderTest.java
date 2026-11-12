@@ -13,8 +13,9 @@ import static org.mockito.Mockito.*;
 /** Exercises the actual widget reader with synthetic interface contents, not game input. */
 public class InvocationReaderTest
 {
-	private static final int ACTIVE = 0xD39034;
-	private static final int INACTIVE = 0x808080;
+	// Script 6750 colours; script 6754 callback arguments; script 6729 header format.
+	private static final int ACTIVE = 0xD39F34;
+	private static final int INACTIVE = 0x9F9F9F;
 
 	private static final class Grid
 	{
@@ -51,12 +52,13 @@ public class InvocationReaderTest
 				when(label.getTextColor()).thenReturn(selected ? ACTIVE : INACTIVE);
 				if (leader)
 				{
-					when(background.getOnOpListener()).thenReturn(new Object[]{6729, 0, 0, selected ? 1 : 0});
+					when(background.getOnOpListener()).thenReturn(new Object[]{6754, 1, 0, selected ? 1 : 0,
+						2, index, index + 1, index + 2, InterfaceID.ToaPartydetails.INVOCATIONS_CONTENT, 0});
 				}
 				if (selected) points += invocation.raidPoints;
 			}
 			when(parent.getChildren()).thenReturn(children);
-			when(score.getText()).thenReturn("Raid Level: " + points);
+			when(score.getText()).thenReturn("Raid Level: " + points + " <col=ffffff>(" + enabled.size() + ")</col>");
 		}
 	}
 
@@ -80,6 +82,58 @@ public class InvocationReaderTest
 		assertNotNull(result);
 		assertEquals(EnumSet.of(Invocation.PATHFINDER, Invocation.MEDIC, Invocation.NEED_LESS_HELP), result.active);
 		assertEquals(80, result.raidPoints);
+	}
+
+	@Test public void leaderHoverWhiteIsReadFromButtonCallback()
+	{
+		Grid grid = new Grid(true, Invocation.WALK_THE_PATH);
+		when(grid.children[Invocation.WALK_THE_PATH.uiIndex * 3 + 2].getTextColor()).thenReturn(0xFFFFFF);
+		when(grid.children[Invocation.PATHMASTER.uiIndex * 3 + 2].getTextColor()).thenReturn(0xFFFFFF);
+		InvocationSelection result = InvocationReader.read(grid.client);
+		assertNotNull(result);
+		assertEquals(EnumSet.of(Invocation.WALK_THE_PATH), result.active);
+	}
+
+	@Test public void unrecognizedCallbackScriptDoesNotSupplySelectionState()
+	{
+		Grid grid = new Grid(true, Invocation.WALK_THE_PATH);
+		when(grid.children[Invocation.WALK_THE_PATH.uiIndex * 3].getOnOpListener())
+			.thenReturn(new Object[]{6729, 1, 0, 0});
+		InvocationSelection result = InvocationReader.read(grid.client);
+		assertNotNull(result);
+		assertTrue(result.active.contains(Invocation.WALK_THE_PATH));
+	}
+
+	@Test public void malformedCallbackUsesRecognizedColorFallback()
+	{
+		Grid grid = new Grid(true, Invocation.WALK_THE_PATH);
+		Object[][] malformed = {null, {}, {6754}, {6754, 1, 0}, {6754, 1, 0, "1"}, {6754, 1, 0, 2}, {null, 1, 0, 0}};
+		for (Object[] args : malformed)
+		{
+			when(grid.children[Invocation.WALK_THE_PATH.uiIndex * 3].getOnOpListener()).thenReturn(args);
+			InvocationSelection result = InvocationReader.read(grid.client);
+			assertNotNull(result);
+			assertTrue(result.active.contains(Invocation.WALK_THE_PATH));
+		}
+	}
+
+	@Test public void unknownColorWithoutValidCallbackRejectsEvenZeroSelection()
+	{
+		Grid grid = new Grid(false);
+		for (int color : new int[]{0xFFFFFF, 0xD39034, 0x808080, 0})
+		{
+			when(grid.children[Invocation.WALK_THE_PATH.uiIndex * 3 + 2].getTextColor()).thenReturn(color);
+			assertNull(InvocationReader.read(grid.client));
+		}
+	}
+
+	@Test public void malformedCallbackCannotMakeUnknownColorReadable()
+	{
+		Grid grid = new Grid(true, Invocation.WALK_THE_PATH);
+		when(grid.children[Invocation.WALK_THE_PATH.uiIndex * 3 + 2].getTextColor()).thenReturn(0xFFFFFF);
+		when(grid.children[Invocation.WALK_THE_PATH.uiIndex * 3].getOnOpListener())
+			.thenReturn(new Object[]{6754, 1, 0, 2});
+		assertNull(InvocationReader.read(grid.client));
 	}
 
 	@Test public void completeZeroSelectionIsKnownForNonleader()
@@ -119,7 +173,35 @@ public class InvocationReaderTest
 		Grid grid = new Grid(false, Invocation.WALK_THE_PATH);
 		when(grid.client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL)).thenReturn(null);
 		when(grid.client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL_INVOCATIONS)).thenReturn(grid.score);
+		when(grid.score.getText()).thenReturn("50");
 		assertNotNull(InvocationReader.read(grid.client));
+	}
+
+	@Test public void fullHeaderValidatesColorCaptureWhileSidebarIsHidden()
+	{
+		Grid grid = new Grid(false, Invocation.WALK_THE_PATH);
+		Widget sidebarScore = mock(Widget.class);
+		when(sidebarScore.isHidden()).thenReturn(true);
+		when(sidebarScore.getText()).thenReturn("300");
+		when(grid.client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL_INVOCATIONS)).thenReturn(sidebarScore);
+		when(grid.score.getText()).thenReturn("Raid Level: 50 <col=ffffff>(1)</col>");
+		InvocationSelection result = InvocationReader.read(grid.client);
+		assertNotNull(result);
+		assertEquals(50, result.raidPoints);
+	}
+
+	@Test public void malformedOrHiddenPartyHeaderCannotValidateColorCapture()
+	{
+		Grid grid = new Grid(false, Invocation.WALK_THE_PATH);
+		for (String text : new String[]{"Raid Level: 50 (bad)", "Raid Level: 50 (-1)", "Raid Level: 50 (1) extra",
+			"Raid Level: -50 (1)", "Raid Level: 9999999999999999999 (1)"})
+		{
+			when(grid.score.getText()).thenReturn(text);
+			assertNull(InvocationReader.read(grid.client));
+		}
+		when(grid.score.getText()).thenReturn("Raid Level: 50 <col=ffffff>(1)</col>");
+		when(grid.score.isHidden()).thenReturn(true);
+		assertNull(InvocationReader.read(grid.client));
 	}
 
 	@Test public void mismatchingScoreRejectsBothLeaderAndNonleaderCapture()
@@ -127,7 +209,7 @@ public class InvocationReaderTest
 		for (boolean leader : new boolean[]{true, false})
 		{
 			Grid grid = new Grid(leader, Invocation.WALK_THE_PATH);
-			when(grid.score.getText()).thenReturn("300");
+			when(grid.score.getText()).thenReturn("Raid Level: 300 <col=ffffff>(1)</col>");
 			assertNull(InvocationReader.read(grid.client));
 		}
 	}
@@ -177,7 +259,8 @@ public class InvocationReaderTest
 		when(widget.isHidden()).thenReturn(true);
 		assertNull(InvocationReader.number(widget));
 		when(widget.isHidden()).thenReturn(false);
-		for (String value : new String[]{null, "", "4 / 6", "not a level", "-1", "9999999999999999999"})
+		for (String value : new String[]{null, "", "4 / 6", "4 (2)", "Raid Level: 4 (2)",
+			"not a level", "-1", "9999999999999999999"})
 		{
 			when(widget.getText()).thenReturn(value);
 			assertNull(InvocationReader.number(widget));

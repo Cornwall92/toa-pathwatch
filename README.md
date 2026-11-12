@@ -2,7 +2,7 @@
 
 ![ToA Pathwatch](icon.png)
 
-Version 0.1.0 — development build.
+Version 0.1.1 — invocation capture fix.
 
 A movable RuneLite panel showing the current ToA boss's selected invocations,
 active path-levelling invocations, and a static explanation of that path level's effects.
@@ -25,8 +25,17 @@ For Jagex accounts, follow the official login guide:
 https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
 Keep any exported credentials on your own computer.
 
-This source project is not available in the Plugin Hub. Copying a JAR into your
-ordinary RuneLite folders does not install it as a Hub plugin.
+The initial Plugin Hub submission was merged in
+[PR #20523](https://github.com/runelite/plugin-hub/pull/20523). Source updates need
+a separate Hub manifest update before RuneLite distributes them. Copying a JAR
+into ordinary RuneLite folders does not install it as a Hub plugin.
+
+## Changes in 0.1.1
+
+- Corrects the active-label colour used to capture a party member's selections.
+- Parses the party heading's invocation count, for example `Raid Level: 250 (16)`.
+- Validates the leader's selection handler and rejects unknown fallback colours.
+- Adds regression cases based on the current game scripts, including preset replacement.
 
 ## Behaviour and limits
 
@@ -51,26 +60,25 @@ ordinary RuneLite folders does not install it as a Hub plugin.
 
 ## Verification
 
-The clean Gradle build passed on 11 November 2026: **48 tests, zero failures,
-errors or skips**, with no compiler or Gradle warnings. Verified against RuneLite
-1.13.6 using Gradle 8.10 and Temurin JDK 17.0.21, with Java `--release 11`.
+Build with Gradle 8.10 and JDK 17; the compiler targets Java `--release 11`.
+The GitHub Actions build reports the checks for each published source commit.
 
 Automated checks cover the invocation catalogue and path scaling, complete/partial
 widget parsing, leader and non-leader reads, preset replacement, raid entry,
 room-loading gaps, exit/reset, and late raid-level updates. The GitHub Actions
 workflow runs the Gradle build and tests for pushes and pull requests.
 
-No live RuneScape session was used. The interface formats, non-leader fallback,
-room transitions and overlay placement still need the in-game checks below.
-These checks do not establish Plugin Hub acceptance.
+The 0.1.1 reader fixtures follow RuneLite's current game-script dump (revision 242).
+Automated checks do not replace in-game validation. A user reported failed capture
+in 0.1.0; the corrected reader still needs the in-game checks below.
 
 ## In-game acceptance checklist
 
 - Solo leader: open the invocation tab, enter each boss, compare the listed names.
 - Load preset A, then B (including two with equal scores), open the current party
   invocation tab and enter. Confirm only B is shown. Repeat after manual edits.
-- Non-leader: join a party, open its invocation tab and repeat. The label-color
-  fallback and score widget formats particularly need live confirmation.
+- Non-leader: join a party, open its invocation tab and repeat. Test with the
+  rewards sidebar both shown and hidden, and with the cursor over an invocation.
 - Zero raid level: verify **None relevant enabled**, rather than a missing capture.
 - Walk the Path: compare the panel's path level with the game's HUD after room changes.
 - Check path levels 0/1, 2/3 and 4/5/6, especially Akkha's 4/5/6 sequence lengths.
@@ -80,8 +88,8 @@ These checks do not establish Plugin Hub acceptance.
 
 ## Publication
 
-RuneLite currently lists new high-end PvM boss plugins among features not being
-considered. This reference-only presentation still requires an eligibility decision
-before any Hub submission. No acceptance or Jagex approval is claimed.
+The original reference panel was accepted in the initial Hub submission linked
+above. Updates remain subject to maintainer review; merge status does not establish
+that a particular build has reached the client or that gameplay has been verified.
 
 See **RESEARCH.md** for the full name list, exact API mappings, sources, and uncertainties.

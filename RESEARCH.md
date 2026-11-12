@@ -1,7 +1,8 @@
 # ToA invocation and path research
 
-Checked 11 November 2026. Research supports the included development draft; it is
-not a report of in-game verification.
+Invocation capture rechecked 12 November 2026 against RuneLite's revision-242
+game-script dump. Other reference data was checked 11 November 2026. This is
+source research, not a report of successful in-game verification.
 
 ## Invocation catalogue
 
@@ -41,25 +42,31 @@ party's configuration.
 Use `client.getWidget(InterfaceID.ToaPartydetails.INVOCATIONS_CONTENT)` — currently
 interface **774**, child **52**. Read on the client thread after the party scripts
 have built the children. Existing implementations use `ScriptPostFired` IDs **6729**
-(invocation rebuild) and **6732** (reward-panel toggle); **6617** is also used for
-the party build. A visible-grid read on `GameTick` catches delayed population.
+(party/invocation rebuild) and **6732** (reward-panel toggle); **6617** checks the
+party interface size. A visible-grid read on `GameTick` catches delayed population.
 Reads are coalesced through `ClientThread.invokeLater` so script-driven preset
 loads can finish rebuilding the interface before the full selection is read.
 
 For each label, identify its invocation and inspect the preceding background's
-`getOnOpListener()`: when present, an integer at index **3** of **1** means selected;
-**0** means unselected. This is an implementation detail of the game interface,
-not a stable API contract.
+`getOnOpListener()`: script **6754**, integer at index **3**, with **1** selected
+and **0** unselected. Script **6751** installs this handler for party leaders.
+Read its arguments only; the plugin does not invoke the handler. This is an
+implementation detail of the game interface, not a stable API contract.
 
-**Non-leaders:** those click handlers may be absent. The Invocation Display author
-reports selected labels with color **0xD39034**. The draft uses that fallback only
-when all 44 labels are present and their selected point total matches the visible
-party score. Its exact color and score text format still require live testing.
-An unreadable/partial frame must remain unknown. A fully parsed list with a matching
-score of zero is a legitimate empty selection.
+**Non-leaders:** click handlers are absent. Script **6750** establishes active label
+colour **0xD39F34** and inactive colour **0x9F9F9F**. Unknown colours remain
+unreadable. This fallback requires all 44 labels and a matching visible party
+score. Version 0.1.0 incorrectly used **0xD39034**, based on another plugin's
+unverified fallback. Script **6752** changes hovered labels to white only for
+leaders, whose selection is read from the handler above.
 
-The display plugin also tries interface 774:92 as an active-only list, but its
-source explicitly describes that route as a hypothesis. It is not used here.
+Script **6729** formats the header as `Raid Level: 250 <col=ffffff>(16)</col>`;
+the parenthesized number is the invocation count, not the raid level. Version 0.1.1
+accepts this header and the numeric sidebar score. A fully parsed list with a
+matching score of zero is a legitimate empty selection.
+
+The display plugin also tries interface 774:92 as an active-only list, but current
+script **6770** shows that this is the invocation count. It is not a name list.
 Nor does this draft use the old `spriteId < 4600` heuristic: current RuneLite
 gamevals place `ToaInvocationIcons` at 8722–8745, so that shortcut is unsafe.
 
@@ -75,6 +82,7 @@ current party's invocation tab remains essential after any preset/party changes.
 
 Sources:
 
+- [Current game scripts, revision 242](https://github.com/runelite/cs2-scripts/tree/562463b3477faa9f850e5c3615c087f5a32fedc3/scripts) — scripts 6729, 6750, 6751, 6752 and 6770.
 - [Established preset reader](https://github.com/LlemonDuck/tombs-of-amascut/blob/cec1665058a3244bf41daddc0e1f43177a0b3edf/src/main/java/com/duckblade/osrs/toa/features/invocationpresets/InvocationPresetsManager.java)
 - [Non-leader capture implementation and caveats](https://github.com/noahnoah711/toa-invocation-display/blob/2351fc4947872521aa226f10ef07e90577475a19/src/main/java/com/github/noahnoah711/toainvocationdisplay/ToaInvocationDisplayPlugin.java)
 - [RuneLite interface gamevals](https://github.com/runelite/runelite/blob/bb0fa42b3d9329ffe31115f1f20042c455def2e3/runelite-api/src/main/java/net/runelite/api/gameval/InterfaceID.java)
@@ -184,9 +192,11 @@ Sources:
 
 The panel is designed as static reference text for a detected room/path level.
 It does not respond to individual attacks or predict the next mechanic. This is
-a design distinction, **not proof of approval**: RuneLite's current rejected-feature
-list includes new high-end PvM boss plugins, and Jagex restricts additional combat
-indicators. Obtain an eligibility decision before a Hub submission.
+a design distinction: RuneLite's current rejected-feature list includes new
+high-end PvM boss plugins, and Jagex restricts additional combat indicators.
+The initial reference panel was accepted in
+[Hub PR #20523](https://github.com/runelite/plugin-hub/pull/20523); future changes
+remain subject to review.
 
 - [RuneLite feature restrictions](https://github.com/runelite/runelite/wiki/Rejected-or-Rolled-Back-Features)
 - [Jagex third-party client guidelines](https://secure.runescape.com/m=news/third-party-client-guidelines?oldschool=1)
