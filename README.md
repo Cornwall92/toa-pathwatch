@@ -2,7 +2,7 @@
 
 ![ToA Pathwatch](icon.png)
 
-Version 0.1.3 — party-screen invocation capture.
+Version 0.1.4 — invocation hover descriptions and visibility controls.
 
 A movable RuneLite panel showing the current ToA boss's selected invocations,
 active path-levelling invocations, and a static explanation of that path level's effects.
@@ -21,6 +21,10 @@ not automatically attach itself to the vanilla health bar or another plugin's ov
    to update. If you enabled the plugin with the screen already open, close and reopen it.
 6. Enter a boss room, then Alt-drag the reference panel into position. Width and
    optional general invocations/puzzle-room display are configurable.
+7. Hover over an invocation to read its effects. **Invocation hover descriptions**
+   is enabled by default; turn it off to disable tooltips. Turn off **Show invocations**
+   to hide the entire invocation section while keeping the boss/path title and path effects.
+   These display settings do not stop invocation capture or the lobby capture confirmation.
 
 For Jagex accounts, follow the official login guide:
 https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
@@ -30,6 +34,16 @@ The initial Plugin Hub submission was merged in
 [PR #20523](https://github.com/runelite/plugin-hub/pull/20523). Source updates need
 a separate Hub manifest update before RuneLite distributes them. Copying a JAR
 into ordinary RuneLite folders does not install it as a Hub plugin.
+
+## Changes in 0.1.4
+
+- Adds static effect descriptions for all 44 invocations, shown when hovering over
+  a displayed invocation row. Long descriptions wrap in a standard RuneLite tooltip.
+- Adds **Invocation hover descriptions** and **Show invocations**, both enabled by
+  default. Existing boss/path filtering and optional raid-point labels are preserved.
+- Uses the rendered row bounds so hover targets follow moved panels and wrapped names.
+- Automated rendering checks cover hover targeting and display toggles; live checks
+  for this release remain pending.
 
 ## Changes in 0.1.3
 
@@ -95,6 +109,10 @@ failing after 0.1.1/0.1.2; the replacement reader needs the in-game checks below
 
 ## In-game acceptance checklist
 
+- Hover over boss, path, and optionally raid-wide invocations: each shows its own effects.
+- Toggle **Invocation hover descriptions** off/on; tooltips stop/return immediately.
+- Toggle **Show invocations** off/on; the whole section hides/returns and path effects remain.
+- Alt-drag the panel and try minimum width with raid points enabled; hover still follows each row.
 - Solo leader: open the invocation tab, confirm **Captured** with the correct count/score
   before entry, then enter each boss and compare the listed names.
 - Load preset A, then B (including two with equal scores), open the current party

@@ -216,6 +216,21 @@ Sources:
 - [Zebak](https://oldschool.runescape.wiki/w/Zebak)
 - [Rockin' around the croc](https://oldschool.runescape.wiki/w/Rockin%27_around_the_croc)
 
+## Invocation hover descriptions (0.1.4)
+
+The catalogue's short effect descriptions paraphrase the native invocation structs'
+description parameter 1262 in [game cache 2762](https://archive.openrs2.org/caches/runescape/2762).
+Blowing Mud's two-player targeting and lack of additional solo effect are also
+documented in the [raid strategy reference](https://oldschool.runescape.wiki/w/Tombs_of_Amascut/Strategies).
+Lively Larvae uses qualitative wording because the native description and observed
+egg counts do not give a consistent exact multiplier.
+
+Hover detection uses each rendered LineComponent's local bounds plus the overlay's
+canvas position. RuneLite's TooltipManager handles placement and frame cleanup;
+descriptions wrap at 300 pixels. These are static reference descriptions, with no
+attack tracking or live recommendations. Both new settings are enabled by default;
+hiding the list affects presentation only and does not disable capture.
+
 ## Eligibility and remaining validation
 
 The panel is designed as static reference text for a detected room/path level.
