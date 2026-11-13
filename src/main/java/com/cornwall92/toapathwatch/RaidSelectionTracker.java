@@ -33,7 +33,9 @@ public final class RaidSelectionTracker
 	}
 
 	/**
-	 * Called once per game tick. A region of -1 means the local position is unknown.
+	 * Called once per game tick in raid regions. A confirmed lobby can additionally
+	 * be synchronized before accepting a party-screen capture after raid exit.
+	 * A region of -1 means the local position is unknown.
 	 * There are five score observations, including the first entry tick. Subsequent
 	 * observations are permitted only in the nexus; entering a path closes the window.
 	 */

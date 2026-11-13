@@ -2,7 +2,7 @@
 
 ![ToA Pathwatch](icon.png)
 
-Version 0.1.2 — invocation tablet icon.
+Version 0.1.3 — party-screen invocation capture.
 
 A movable RuneLite panel showing the current ToA boss's selected invocations,
 active path-levelling invocations, and a static explanation of that path level's effects.
@@ -16,8 +16,9 @@ not automatically attach itself to the vanilla health bar or another plugin's ov
 3. Launch the development client: `.\gradlew.bat run`
 4. Enable **ToA Pathwatch** in RuneLite.
 5. In the raid lobby, open **your current party's Invocations tab** before entering
-   each raid. After loading a preset, keep that tab open until its selections and
-   raid level have finished updating. The plugin reads the resulting full selection.
+   each raid. Check the Pathwatch panel says **Captured … invocations. Raid level: …**
+   and matches the party screen. After loading a preset, wait for that confirmation
+   to update. If you enabled the plugin with the screen already open, close and reopen it.
 6. Enter a boss room, then Alt-drag the reference panel into position. Width and
    optional general invocations/puzzle-room display are configurable.
 
@@ -29,6 +30,19 @@ The initial Plugin Hub submission was merged in
 [PR #20523](https://github.com/runelite/plugin-hub/pull/20523). Source updates need
 a separate Hub manifest update before RuneLite distributes them. Copying a JAR
 into ordinary RuneLite folders does not install it as a Hub plugin.
+
+## Changes in 0.1.3
+
+- Reads the complete selection from the game script that builds the party screen,
+  independent of widget colours, hover styling, or other plugins' preset highlighting.
+- Accepts only your current party (leader or member), with a matching invocation
+  count and raid score. Unknown selection bits remain uncaptured.
+- Preserves a successful capture through transient widgets and controller updates
+  during raid entry; confirmed lobby party changes and raid exits still clear it.
+- Shows a lobby capture confirmation before entering, including the invocation
+  count and raid level. A new server-confirmed preset replaces the entire selection.
+- Adds script-input and plugin-event integration regressions. Live confirmation
+  of this release remains pending; automated tests do not establish gameplay success.
 
 ## Changes in 0.1.2
 
@@ -47,7 +61,7 @@ into ordinary RuneLite folders does not install it as a Hub plugin.
 - Contains all 44 invocation names and their UI positions/raid points.
 - By default lists current-boss and path-levelling invocations. Other raid-wide
   selections can be enabled in configuration.
-- Reads selections from the visible party interface and freezes a fresh capture
+- Reads selections supplied to the visible current-party interface and freezes a fresh capture
   for that raid. A complete zero-invocation selection is supported.
 - Preset loads replace the whole observed selection, including invocations that
   were switched off. Preset names/files are not needed. Reopen the party tab after
@@ -69,17 +83,20 @@ Build with Gradle 8.10 and JDK 17; the compiler targets Java `--release 11`.
 The GitHub Actions build reports the checks for each published source commit.
 
 Automated checks cover the invocation catalogue and path scaling, complete/partial
-widget parsing, leader and non-leader reads, preset replacement, raid entry,
+party-script parsing, leader and non-leader reads, preset replacement, raid entry,
 room-loading gaps, exit/reset, and late raid-level updates. The GitHub Actions
 workflow runs the Gradle build and tests for pushes and pull requests.
 
-The 0.1.1 reader fixtures follow RuneLite's current game-script dump (revision 242).
-Automated checks do not replace in-game validation. A user reported failed capture
-in 0.1.0; the corrected reader still needs the in-game checks below.
+The 0.1.3 reader fixtures follow RuneLite's current game-script dump (revision 242),
+including independent literal selection masks across the 31-bit word boundary.
+The event tests cover capture through raid entry, controller updates, foreign parties,
+preset replacement, and transient/unloaded widgets. A user reported capture still
+failing after 0.1.1/0.1.2; the replacement reader needs the in-game checks below.
 
 ## In-game acceptance checklist
 
-- Solo leader: open the invocation tab, enter each boss, compare the listed names.
+- Solo leader: open the invocation tab, confirm **Captured** with the correct count/score
+  before entry, then enter each boss and compare the listed names.
 - Load preset A, then B (including two with equal scores), open the current party
   invocation tab and enter. Confirm only B is shown. Repeat after manual edits.
 - Non-leader: join a party, open its invocation tab and repeat. Test with the
