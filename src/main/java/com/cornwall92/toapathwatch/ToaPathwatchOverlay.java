@@ -38,7 +38,15 @@ public class ToaPathwatchOverlay extends OverlayPanel
 	public Dimension render(Graphics2D graphics)
 	{
 		Boss boss = plugin.getBoss();
-		if (boss == null) return null;
+		if (boss == null)
+		{
+			String status = plugin.getLobbyStatus();
+			if (status == null) return null;
+			panelComponent.setPreferredSize(new Dimension(config.width(), 0));
+			panelComponent.getChildren().add(TitleComponent.builder().text("ToA Pathwatch 0.1.3").color(GOLD).build());
+			line(status, Color.LIGHT_GRAY);
+			return super.render(graphics);
+		}
 		int level = plugin.getPathLevel();
 		panelComponent.setPreferredSize(new Dimension(config.width(), 0));
 		String title = boss.displayName + (boss == Boss.WARDENS ? "" : " - Path " + (level < 0 ? "?" : level));

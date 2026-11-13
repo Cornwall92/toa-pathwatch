@@ -1,6 +1,6 @@
 # ToA invocation and path research
 
-Invocation capture rechecked 12 November 2026 against RuneLite's revision-242
+Invocation capture rechecked 13 November 2026 against RuneLite's revision-242
 game-script dump. Other reference data was checked 11 November 2026. This is
 source research, not a report of successful in-game verification.
 
@@ -39,54 +39,82 @@ raid level cannot identify its constituent invocations. Different selections can
 produce the same total. Saved personal presets are not proof of the current
 party's configuration.
 
-Use `client.getWidget(InterfaceID.ToaPartydetails.INVOCATIONS_CONTENT)` — currently
-interface **774**, child **52**. Read on the client thread after the party scripts
-have built the children. Existing implementations use `ScriptPostFired` IDs **6729**
-(party/invocation rebuild) and **6732** (reward-panel toggle); **6617** checks the
-party interface size. A visible-grid read on `GameTick` catches delayed population.
-Reads are coalesced through `ClientThread.invokeLater` so script-driven preset
-loads can finish rebuilding the interface before the full selection is read.
+Version 0.1.3 captures the **input to party-build script 6729** using RuneLite's
+`ScriptPreFired.getScriptEvent().getArguments()`, then accepts the parsed snapshot
+on `ScriptPostFired` only while the party screen is visible in the lobby. Script
+6729 uses these same inputs to build both the invocation grid and summary. It
+rebuilds the full selection after individual edits and preset loads.
 
-For each label, identify its invocation and inspect the preceding background's
-`getOnOpListener()`: script **6754**, integer at index **3**, with **1** selected
-and **0** unselected. Script **6751** installs this handler for party leaders.
-Read its arguments only; the plugin does not invoke the handler. This is an
-implementation detail of the game interface, not a stable API contract.
+| Event argument | Meaning |
+|---|---|
+| 0 | Script ID 6729 |
+| 1 | Party role: 1 = member, 2 = leader; other roles are rejected |
+| 2 | Additional party metadata, not used to identify selections |
+| 3 | Active invocation count |
+| 4 | Raid level |
+| 5 | Party tab: 0 members, 1 applicants, 2 invocations, 3 summary |
+| 6–8 | Three invocation selection words |
 
-**Non-leaders:** click handlers are absent. Script **6750** establishes active label
-colour **0xD39F34** and inactive colour **0x9F9F9F**. Unknown colours remain
-unreadable. This fallback requires all 44 labels and a matching visible party
-score. Version 0.1.0 incorrectly used **0xD39034**, based on another plugin's
-unverified fallback. Script **6752** changes hovered labels to white only for
-leaders, whose selection is read from the handler above.
+Script 6755 reads cache struct parameter 1159 as the bit index. Standard invocation
+bits are 1 through 44 in catalogue order. Words are split at **31 and 62**, not
+32 and 64. The reader validates the count and summed points and rejects any
+unsupported/reserved bits, including the event/league-only Blazing Tombs entries.
+A zero-selection, zero-score party is valid. Input arrays must have the expected
+script ID, length and integer types; malformed data stays unknown.
 
-Script **6729** formats the header as `Raid Level: 250 <col=ffffff>(16)</col>`;
-the parenthesized number is the invocation count, not the raid level. Version 0.1.1
-accepts this header and the numeric sidebar score. A fully parsed list with a
-matching score of zero is a legitimate empty selection.
+The party role is established by script 6730: 2 produces Disband, 1 Leave, 3
+Withdraw, and the other roles Apply. Thus another party with the same total cannot
+be mistaken for the user's party. The screen may show any of its party tabs;
+the normal user instruction remains to open Invocations and verify the capture.
+An interface already open when enabling the plugin must be closed and reopened.
 
-The display plugin also tries interface 774:92 as an active-only list, but current
-script **6770** shows that this is the invocation count. It is not a name list.
-Nor does this draft use the old `spriteId < 4600` heuristic: current RuneLite
-gamevals place `ToaInvocationIcons` at 8722–8745, so that shortcut is unsafe.
+### Comparison with established plugins
 
-Cache a fresh capture before raid entry. Clear it on party/session changes and
-raid exit. Freeze it for the raid rather than replacing it when lobby widgets
-unload. The draft asks for the current party's Invocations tab before each raid;
-mid-raid enabling does not pretend to reconstruct missing selections. Entry checks
-the captured points against the raid-level varbit, retrying for up to five tick
-observations while in the nexus if the score arrives late. Three consecutive
-unknown-region ticks are tolerated during room transitions; a confirmed exit
-clears immediately. Equal scores cannot prove equal selections, so reopening the
-current party's invocation tab remains essential after any preset/party changes.
+| Plugin | Approach | Findings |
+|---|---|---|
+| Tombs of Amascut | Grid 774:52, leader `getOnOpListener()[3]`, scripts 6729/6732 | Uses selection state rather than cosmetic colour. Its preset cleanup can recolour all grid children white. |
+| ToA Invocations | Same leader callback plus WidgetLoaded; retains cache across rooms | Missing non-leader callbacks are skipped, so this is not a complete non-leader solution. |
+| ToA Invocation Display | Deferred reads, names plus sprite/colour/callback heuristics; retains prior cache on unsuccessful reads | Addresses transient and non-leader UI, but contains unsafe assumptions that must not be copied. |
 
-Sources:
+The direct script snapshot reads the same authoritative selection that supplies
+those callbacks, before plugins can recolour the widgets. It removes the old
+all-label/colour dependency and the repeated tick reads entirely.
 
-- [Current game scripts, revision 242](https://github.com/runelite/cs2-scripts/tree/562463b3477faa9f850e5c3615c087f5a32fedc3/scripts) — scripts 6729, 6750, 6751, 6752 and 6770.
-- [Established preset reader](https://github.com/LlemonDuck/tombs-of-amascut/blob/cec1665058a3244bf41daddc0e1f43177a0b3edf/src/main/java/com/duckblade/osrs/toa/features/invocationpresets/InvocationPresetsManager.java)
-- [Non-leader capture implementation and caveats](https://github.com/noahnoah711/toa-invocation-display/blob/2351fc4947872521aa226f10ef07e90577475a19/src/main/java/com/github/noahnoah711/toainvocationdisplay/ToaInvocationDisplayPlugin.java)
-- [RuneLite interface gamevals](https://github.com/runelite/runelite/blob/bb0fa42b3d9329ffe31115f1f20042c455def2e3/runelite-api/src/main/java/net/runelite/api/gameval/InterfaceID.java)
-- [RuneLite sprite gamevals](https://github.com/runelite/runelite/blob/bb0fa42b3d9329ffe31115f1f20042c455def2e3/runelite-api/src/main/java/net/runelite/api/gameval/SpriteID.java)
+Do **not** copy these alternatives from the comparison plugin:
+
+- `spriteId < 4600`: current invocation sprite gamevals have moved.
+- `0xD39034`: script 6750 actually uses `0xD39F34`.
+- Interface 774:92 as an active-name list: it is an invocation count.
+- Interface 776:5 as a party selection: scripts 6609/6610 build a generic reference
+  catalogue with every entry's active sprite, without any party selection input.
+
+Script 6751 also embeds selection state in desktop hover callbacks for both roles,
+but RuneLite's public Widget API exposes setters without corresponding getters.
+That does not provide a supported fallback and no reflection is used.
+
+### Lifecycle findings and validation
+
+The previous implementation could erase a valid lobby candidate on a controller
+varp notification before the first raid GameTick. It also invalidated a capture
+on any unreadable open grid, including transient click styling. These are code
+failure paths, not proof of which occurred in the user's game.
+
+The replacement checks controller identity only with settled lobby geography,
+accepts complete snapshots immediately after the party-build script, and does not
+re-read transient widgets. An individual edit invalidates the candidate until the
+server supplies a complete updated selection. Logout, confirmed party changes and
+raid exit still clear it. Raid entry still requires matching points and allows up
+to five observations in the nexus for late score updates. Equal scores alone never
+identify a selection. The lobby panel displays capture success before the raid.
+
+Sources checked against current upstream/Hub source on 13 November 2026:
+
+- [Current game scripts, revision 242](https://github.com/runelite/cs2-scripts/tree/562463b3477faa9f850e5c3615c087f5a32fedc3/scripts): 6729, 6730, 6749, 6750, 6751, 6754, 6755, 6609 and 6610.
+- [Tombs of Amascut preset reader and visual cleanup](https://github.com/LlemonDuck/tombs-of-amascut/blob/831c39b9d60f40965d221fe5ac6b4d19d61c97f4/src/main/java/com/duckblade/osrs/toa/features/invocationpresets/InvocationPresetsManager.java)
+- [ToA Invocations reader](https://github.com/mxO-dev/toa-invocations/blob/84fa5bcc586a75178b599f307184fb8619787404/src/main/java/com/toainvocations/ToaInvocationsPlugin.java)
+- [ToA Invocation Display reader](https://github.com/noahnoah711/toa-invocation-display/blob/2351fc4947872521aa226f10ef07e90577475a19/src/main/java/com/github/noahnoah711/toainvocationdisplay/ToaInvocationDisplayPlugin.java)
+- [RuneLite ScriptPreFired API](https://github.com/runelite/runelite/blob/master/runelite-api/src/main/java/net/runelite/api/events/ScriptPreFired.java)
+- [RuneLite Widget API](https://github.com/runelite/runelite/blob/master/runelite-api/src/main/java/net/runelite/api/widgets/Widget.java)
 
 ## Reading path levels and identifying the room
 

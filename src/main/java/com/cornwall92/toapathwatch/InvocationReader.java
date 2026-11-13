@@ -4,77 +4,53 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.runelite.api.Client;
-import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 
 public final class InvocationReader
 {
-	// CS2 scripts 6750/6751: label colours and the callback carrying leader selection state.
-	private static final int ACTIVE_LABEL_COLOR = 0xD39F34;
-	private static final int INACTIVE_LABEL_COLOR = 0x9F9F9F;
+	static final int PARTY_BUILD_SCRIPT = 6729;
 	private static final Pattern SINGLE_NUMBER = Pattern.compile("^(?:Raid [Ll]evel:?\\s*)?(\\d+)$");
-	// Script 6729 appends the active invocation count, e.g. "Raid Level: 250 (16)".
-	private static final Pattern PARTY_SCORE = Pattern.compile("^(?:Raid [Ll]evel:?\\s*)?(\\d+)(?:\\s+\\(\\d+\\))?$");
 
 	private InvocationReader() {}
 
-	public static InvocationSelection read(Client client)
+	/**
+	 * Script 6729's input is the complete selection used to build the party screen.
+	 * Read before the script runs: post-script widgets can be recoloured by other plugins.
+	 * Arguments include the script ID, role, party metadata, count, score, tab and three
+	 * 31-bit selection words. Roles 1/2 are a member/leader of the current party.
+	 */
+	public static InvocationSelection readPartyBuild(Object[] args)
 	{
-		Widget parent = client.getWidget(InterfaceID.ToaPartydetails.INVOCATIONS_CONTENT);
-		if (parent == null || parent.isHidden() || parent.getChildren() == null)
-		{
-			return null;
-		}
-		Widget[] children = parent.getChildren();
+		if (args == null || args.length != 9) return null;
+		for (Object arg : args) if (!(arg instanceof Integer)) return null;
+		if ((Integer) args[0] != PARTY_BUILD_SCRIPT) return null;
+		int role = (Integer) args[1];
+		if (role != 1 && role != 2) return null;
+		int tab = (Integer) args[5];
+		if (tab < 0 || tab > 3) return null;
+		int[] words = {(Integer) args[6], (Integer) args[7], (Integer) args[8]};
+		int[] knownBits = new int[3];
 		Map<Invocation, Boolean> states = new EnumMap<>(Invocation.class);
-		boolean usedColor = false;
-		for (int i = 2; i < children.length; i++)
+		int count = 0;
+		for (Invocation invocation : Invocation.values())
 		{
-			Widget label = children[i];
-			Invocation invocation = label == null ? null : Invocation.fromName(label.getText());
-			if (invocation == null)
-			{
-				continue;
-			}
-			if (states.containsKey(invocation))
-			{
-				return null; // Ambiguous or partially rebuilt layout.
-			}
-			Widget background = children[i - 2];
-			Boolean active = background == null ? null : listenerState(background.getOnOpListener(), 6754, 3);
-			if (active == null)
-			{
-				// Non-leader labels keep their state colours on hover (scripts 6752/6753).
-				// Leader labels can turn white, but their 6754 callback above retains the state.
-				usedColor = true;
-				int color = label.getTextColor();
-				if (color == ACTIVE_LABEL_COLOR) active = true;
-				else if (color == INACTIVE_LABEL_COLOR) active = false;
-				else return null; // Unknown/hover styling is not an inactive selection.
-			}
+			// Cache param 1159: ordinary invocation bits are 1..44 in UI order.
+			// Script 6755 splits at 31 and 62, not at 32 and 64.
+			int bit = invocation.uiIndex + 1;
+			int word = bit / 31;
+			int mask = 1 << (bit % 31);
+			knownBits[word] |= mask;
+			boolean active = (words[word] & mask) != 0;
 			states.put(invocation, active);
+			if (active) count++;
 		}
-		Integer points = readNumber(client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL), PARTY_SCORE);
-		if (points == null)
+		for (int i = 0; i < words.length; i++)
 		{
-			points = number(client.getWidget(InterfaceID.ToaPartydetails.RAID_LEVEL_INVOCATIONS));
+			// Do not silently drop event/league-only or future invocations.
+			if ((words[i] & ~knownBits[i]) != 0) return null;
 		}
-		// Color reads need a matching score so a default-grey loading frame cannot erase selections.
-		// A real zero-invocation raid with a displayed score of zero is valid.
-		if (usedColor && points == null)
-		{
-			return null;
-		}
-		return InvocationSelection.validate(states, points);
-	}
-
-	private static Boolean listenerState(Object[] args, int scriptId, int stateIndex)
-	{
-		if (args == null || args.length <= stateIndex || !Integer.valueOf(scriptId).equals(args[0])) return null;
-		if (Integer.valueOf(1).equals(args[stateIndex])) return true;
-		if (Integer.valueOf(0).equals(args[stateIndex])) return false;
-		return null;
+		if (count != (Integer) args[3]) return null;
+		return InvocationSelection.validate(states, (Integer) args[4]);
 	}
 
 	public static Integer number(Widget widget)
