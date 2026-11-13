@@ -1,5 +1,9 @@
 package com.cornwall92.toapathwatch;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import java.awt.AlphaComposite;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -13,7 +17,9 @@ import net.runelite.api.Client;
 import net.runelite.api.Point;
 import net.runelite.client.config.FontType;
 import net.runelite.client.config.RuneLiteConfig;
+import net.runelite.client.config.TooltipPositionType;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
+import net.runelite.client.ui.overlay.tooltip.TooltipOverlay;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,6 +35,8 @@ public class ToaPathwatchOverlayTest
 	private RuneLiteConfig runeLiteConfig;
 	private TooltipManager tooltips;
 	private ToaPathwatchOverlay overlay;
+	private TooltipOverlay popupOverlay;
+	private BufferedImage canvas;
 	private Graphics2D graphics;
 
 	@Before public void setUp()
@@ -38,13 +46,27 @@ public class ToaPathwatchOverlayTest
 		config = mock(ToaPathwatchConfig.class, CALLS_REAL_METHODS);
 		runeLiteConfig = mock(RuneLiteConfig.class);
 		when(runeLiteConfig.tooltipFont()).thenReturn(FontType.REGULAR.withFamily(Font.DIALOG).withSize(12));
+		when(runeLiteConfig.tooltipPosition()).thenReturn(TooltipPositionType.UNDER_CURSOR);
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(new Color(70, 61, 50, 156));
 		tooltips = new TooltipManager();
 		overlay = new ToaPathwatchOverlay(plugin, config, client, tooltips, runeLiteConfig);
+		popupOverlay = Guice.createInjector(new AbstractModule()
+		{
+			@Override protected void configure()
+			{
+				bind(Client.class).toProvider(() -> client);
+				bind(TooltipManager.class).toProvider(() -> tooltips);
+				bind(RuneLiteConfig.class).toProvider(() -> runeLiteConfig);
+			}
+		}).getInstance(TooltipOverlay.class);
 		// Keep the rendered children available for locating the actual displayed rows.
 		overlay.setClearChildren(false);
 		overlay.getBounds().setLocation(80, 100);
-		graphics = new BufferedImage(1200, 900, BufferedImage.TYPE_INT_ARGB).createGraphics();
+		canvas = new BufferedImage(1200, 900, BufferedImage.TYPE_INT_ARGB);
+		graphics = canvas.createGraphics();
 		graphics.setFont(new Font(Font.DIALOG, Font.PLAIN, 12));
+		when(client.getCanvasWidth()).thenReturn(canvas.getWidth());
+		when(client.getCanvasHeight()).thenReturn(canvas.getHeight());
 		when(client.getMouseCanvasPosition()).thenReturn(new Point(-1, -1));
 		when(plugin.getBoss()).thenReturn(Boss.KEPHRI);
 		when(plugin.getPathLevel()).thenReturn(1);
@@ -70,7 +92,54 @@ public class ToaPathwatchOverlayTest
 		// These are normally cleared by OverlayPanel and TooltipOverlay each frame.
 		overlay.getPanelComponent().getChildren().clear();
 		tooltips.clear();
+		graphics.setComposite(AlphaComposite.Clear);
+		graphics.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+		graphics.setComposite(AlphaComposite.SrcOver);
 		return overlay.render(graphics);
+	}
+
+	private BufferedImage renderPopup()
+	{
+		assertEquals(1, tooltips.getTooltips().size());
+		assertNotNull(tooltips.getTooltips().get(0).getComponent());
+		BufferedImage image = new BufferedImage(1200, 900, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D popupGraphics = image.createGraphics();
+		try
+		{
+			popupGraphics.setFont(runeLiteConfig.tooltipFont().getFont());
+			// Exercise RuneLite's real tooltip renderer, including its global-color handling.
+			popupOverlay.render(popupGraphics);
+		}
+		finally
+		{
+			popupGraphics.dispose();
+		}
+		assertTrue(tooltips.getTooltips().isEmpty());
+		return image;
+	}
+
+	private Color popupBackground(BufferedImage image)
+	{
+		Point mouse = client.getMouseCanvasPosition();
+		// Three pixels inside the box avoids its two border strokes and the text.
+		return new Color(image.getRGB(mouse.getX() + 3, mouse.getY() + 24 + 3), true);
+	}
+
+	private int mainBackgroundAlpha()
+	{
+		return new Color(canvas.getRGB(3, 3), true).getAlpha();
+	}
+
+	private boolean hasOpaquePixel(BufferedImage image)
+	{
+		for (int y = 0; y < image.getHeight(); y++)
+		{
+			for (int x = 0; x < image.getWidth(); x++)
+			{
+				if ((image.getRGB(x, y) >>> 24) == 255) return true;
+			}
+		}
+		return false;
 	}
 
 	private Rectangle row(int index)
@@ -118,6 +187,88 @@ public class ToaPathwatchOverlayTest
 		hover(row(3));
 		render();
 		assertTooltipFor(Invocation.LIVELY_LARVAE);
+	}
+
+	@Test public void defaultPopupIsSolidEvenWhenRuneLiteBackgroundIsTransparent()
+	{
+		assertEquals(-1, config.mainOpacity());
+		assertEquals(100, config.popupOpacity());
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(new Color(30, 60, 90, 0));
+		render();
+		hover(row(2));
+		render();
+		assertEquals(0, mainBackgroundAlpha());
+		assertEquals(new Color(30, 60, 90, 255), popupBackground(renderPopup()));
+	}
+
+	@Test public void defaultMainOpacityTracksRuneLiteInBossAndLobby()
+	{
+		render();
+		assertEquals(156, mainBackgroundAlpha());
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(new Color(30, 60, 90, 42));
+		render();
+		assertEquals(42, mainBackgroundAlpha());
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(new Color(30, 60, 90, 210));
+		render();
+		assertEquals(210, mainBackgroundAlpha());
+
+		when(plugin.getBoss()).thenReturn(null);
+		when(plugin.getLobbyStatus()).thenReturn("Captured 2 invocations. Raid level: 55.");
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(new Color(30, 60, 90, 83));
+		render();
+		assertEquals(83, mainBackgroundAlpha());
+		when(config.mainOpacity()).thenReturn(100);
+		render();
+		assertEquals(255, mainBackgroundAlpha());
+	}
+
+	@Test public void mainAndPopupOpacityAreIndependentAndUpdateImmediately()
+	{
+		render();
+		hover(row(2));
+		int[] opacity = {0, 50, 100};
+		int[] alpha = {0, 128, 255};
+		when(config.mainOpacity()).thenReturn(25);
+		for (int i = 0; i < opacity.length; i++)
+		{
+			when(config.popupOpacity()).thenReturn(opacity[i]);
+			render();
+			assertEquals(64, mainBackgroundAlpha());
+			assertEquals(alpha[i], popupBackground(renderPopup()).getAlpha());
+		}
+		when(config.popupOpacity()).thenReturn(25);
+		for (int i = 0; i < opacity.length; i++)
+		{
+			when(config.mainOpacity()).thenReturn(opacity[i]);
+			render();
+			assertEquals(alpha[i], mainBackgroundAlpha());
+			assertEquals(64, popupBackground(renderPopup()).getAlpha());
+		}
+	}
+
+	@Test public void transparentBackgroundsKeepTextOpaque()
+	{
+		when(config.mainOpacity()).thenReturn(0);
+		when(config.popupOpacity()).thenReturn(0);
+		render();
+		hover(row(2));
+		render();
+		assertEquals(0, mainBackgroundAlpha());
+		assertTrue(hasOpaquePixel(canvas));
+		BufferedImage popup = renderPopup();
+		assertEquals(0, popupBackground(popup).getAlpha());
+		assertTrue(hasOpaquePixel(popup));
+	}
+
+	@Test public void explicitMainOpacityIsNotReplacedByRuneLitePreference()
+	{
+		// 61% resolves to RuneLite's standard alpha of 156. OverlayPanel special-cases
+		// that standard color, so its preferred color must also honor our override.
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(new Color(70, 61, 50, 17));
+		overlay.setPreferredColor(runeLiteConfig.overlayBackgroundColor());
+		when(config.mainOpacity()).thenReturn(61);
+		render();
+		assertEquals(156, mainBackgroundAlpha());
 	}
 
 	@Test public void hoverFollowsMovedOverlayWithoutUsingOldCanvasCoordinates()

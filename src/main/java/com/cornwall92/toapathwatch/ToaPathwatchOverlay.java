@@ -15,6 +15,7 @@ import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
+import net.runelite.client.ui.overlay.components.TooltipComponent;
 import net.runelite.client.ui.overlay.tooltip.Tooltip;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 
@@ -57,13 +58,15 @@ public class ToaPathwatchOverlay extends OverlayPanel
 	public Dimension render(Graphics2D graphics)
 	{
 		invocationRows.clear();
+		// Resolve each frame so both local settings and RuneLite's background colour update live.
+		setPreferredColor(withOpacity(runeLiteConfig.overlayBackgroundColor(), config.mainOpacity()));
 		Boss boss = plugin.getBoss();
 		if (boss == null)
 		{
 			String status = plugin.getLobbyStatus();
 			if (status == null) return null;
 			panelComponent.setPreferredSize(new Dimension(config.width(), 0));
-			panelComponent.getChildren().add(TitleComponent.builder().text("ToA Pathwatch 0.1.4").color(GOLD).build());
+			panelComponent.getChildren().add(TitleComponent.builder().text("ToA Pathwatch 0.1.5").color(GOLD).build());
 			line(status, Color.LIGHT_GRAY);
 			return super.render(graphics);
 		}
@@ -153,9 +156,23 @@ public class ToaPathwatchOverlay extends OverlayPanel
 					text.append(word);
 					width += wordWidth;
 				}
-				tooltipManager.add(new Tooltip(text.toString()));
+				Tooltip tooltip = new Tooltip(text.toString());
+				TooltipComponent component = new TooltipComponent();
+				component.setText(tooltip.getText());
+				component.setBackgroundColor(withOpacity(runeLiteConfig.overlayBackgroundColor(), config.popupOpacity()));
+				// A supplied TooltipComponent retains its colour; string/PanelComponent tooltips
+				// are recoloured by RuneLite's TooltipOverlay using the global transparency.
+				tooltip.setComponent(component);
+				tooltipManager.add(tooltip);
 				return;
 			}
 		}
+	}
+
+	private static Color withOpacity(Color color, int opacity)
+	{
+		if (opacity < 0) return color;
+		int alpha = Math.round(Math.min(opacity, 100) * 255 / 100f);
+		return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
 	}
 }

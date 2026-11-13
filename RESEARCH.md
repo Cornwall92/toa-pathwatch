@@ -231,6 +231,17 @@ descriptions wrap at 300 pixels. These are static reference descriptions, with n
 attack tracking or live recommendations. Both new settings are enabled by default;
 hiding the list affects presentation only and does not disable capture.
 
+## Independent background opacity (0.1.5)
+
+RuneLite's TooltipOverlay applies its global overlay colour to string tooltips and
+PanelComponent tooltips. Pathwatch now supplies a TooltipComponent with an explicit
+background colour, leaving standard placement, font and per-frame cleanup intact.
+Only the background alpha changes; text retains its normal colour and opacity.
+
+The main panel defaults to inheriting RuneLite's current alpha (-1), preserving
+custom user settings as well as the normal default. Explicit values of 0–100 override
+only alpha. Popup opacity defaults to 100. Both use RuneLite's existing background RGB.
+
 ## Eligibility and remaining validation
 
 The panel is designed as static reference text for a detected room/path level.
