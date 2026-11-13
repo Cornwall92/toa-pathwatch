@@ -41,6 +41,7 @@ public class ToaPathwatchPluginTest
 	private ToaPathwatchPlugin plugin;
 	private OverlayManager overlayManager;
 	private ToaPathwatchOverlay overlay;
+	private ToaPathwatchConfig config;
 	private Queue<Runnable> callbacks;
 	private EventBus events;
 
@@ -50,7 +51,7 @@ public class ToaPathwatchPluginTest
 		ClientThread clientThread = mock(ClientThread.class);
 		overlayManager = mock(OverlayManager.class);
 		overlay = mock(ToaPathwatchOverlay.class);
-		ToaPathwatchConfig config = mock(ToaPathwatchConfig.class);
+		config = mock(ToaPathwatchConfig.class);
 		callbacks = new ArrayDeque<>();
 		doAnswer(invocation ->
 		{
@@ -411,5 +412,153 @@ public class ToaPathwatchPluginTest
 		partyBuild(2, 1, 50, 0x1000, 0);
 		enterRaid(50);
 		assertNull(plugin.getSelection());
+	}
+
+	@Test public void eachRoomReadsItsOwnLevelWithoutAHudOrInvocationCapture()
+	{
+		// Literal path IDs from toa_hud_draw; do not derive fixtures from Boss.pathId.
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_SCABARAS_LEVEL)).thenReturn(2);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_HET_LEVEL)).thenReturn(4);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_APMEKEN_LEVEL)).thenReturn(6);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CRONDIS_LEVEL)).thenReturn(1);
+		int[] regions = {14164, 14676, 15188, 15700};
+		int[] levels = {2, 4, 6, 1};
+		Boss[] bosses = {Boss.KEPHRI, Boss.AKKHA, Boss.BABA, Boss.ZEBAK};
+		for (int i = 0; i < regions.length; i++)
+		{
+			region(regions[i]);
+			when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(i + 1);
+			tick();
+			assertSame(bosses[i], plugin.getBoss());
+			assertEquals(levels[i], plugin.getPathLevel());
+			assertNull(plugin.getSelection());
+		}
+	}
+
+	@Test public void hiddenOrStaleHudCannotReplaceServerPathLevel()
+	{
+		region(14676);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(2);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_HET_LEVEL)).thenReturn(4);
+		Widget hud = mock(Widget.class);
+		when(hud.getText()).thenReturn("1");
+		when(client.getWidget(InterfaceID.ToaHud.PATHS_LEVEL)).thenReturn(hud);
+		tick();
+		assertEquals(4, plugin.getPathLevel());
+		when(hud.isHidden()).thenReturn(true);
+		tick();
+		assertEquals(4, plugin.getPathLevel());
+		when(client.getWidget(InterfaceID.ToaHud.PATHS_LEVEL)).thenReturn(null);
+		tick();
+		assertEquals(4, plugin.getPathLevel());
+	}
+
+	@Test public void pathLevelUpdatesLiveAndRejectsValuesOutsideZeroToSix()
+	{
+		region(14164);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(1);
+		for (int level : new int[]{0, 1, 2, 3, 4, 5, 6, 7, -1, 0})
+		{
+			when(client.getVarbitValue(VarbitID.TOA_CLIENT_SCABARAS_LEVEL)).thenReturn(level);
+			tick();
+			assertEquals(level >= 0 && level <= 6 ? level : -1, plugin.getPathLevel());
+		}
+	}
+
+	@Test public void roomTransitionsWaitForMatchingCurrentPathInEitherUpdateOrder()
+	{
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_SCABARAS_LEVEL)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CRONDIS_LEVEL)).thenReturn(5);
+		region(14164);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(1);
+		tick();
+		assertEquals(1, plugin.getPathLevel());
+
+		region(15700); // The room arrives before the current-path update.
+		tick();
+		assertSame(Boss.ZEBAK, plugin.getBoss());
+		assertEquals(-1, plugin.getPathLevel());
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(4);
+		tick();
+		assertEquals(5, plugin.getPathLevel());
+
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(1);
+		tick(); // The current-path update arrives before the room.
+		assertEquals(-1, plugin.getPathLevel());
+		region(14164);
+		tick();
+		assertEquals(1, plugin.getPathLevel());
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(0);
+		tick();
+		assertEquals(-1, plugin.getPathLevel());
+	}
+
+	@Test public void puzzleSettingControlsVisibilityWithoutChangingLevelSource()
+	{
+		region(15186);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(3);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_APMEKEN_LEVEL)).thenReturn(3);
+		tick();
+		assertNull(plugin.getBoss());
+		assertEquals(-1, plugin.getPathLevel());
+		when(config.showPuzzles()).thenReturn(true);
+		tick();
+		assertSame(Boss.BABA, plugin.getBoss());
+		assertEquals(3, plugin.getPathLevel());
+		when(config.showPuzzles()).thenReturn(false);
+		tick();
+		assertEquals(-1, plugin.getPathLevel());
+	}
+
+	@Test public void wardensNeverReuseAPathLevel()
+	{
+		region(14164);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_SCABARAS_LEVEL)).thenReturn(6);
+		tick();
+		assertEquals(6, plugin.getPathLevel());
+		for (int currentPath : new int[]{5, 6})
+		{
+			region(currentPath == 5 ? 15184 : 15696);
+			when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(currentPath);
+			tick();
+			assertSame(Boss.WARDENS, plugin.getBoss());
+			assertEquals(-1, plugin.getPathLevel());
+		}
+	}
+
+	@Test public void enablingInsideRaidReadsPathLevelWithoutCapturedInvocations()
+	{
+		plugin.shutDown();
+		drainCallbacks();
+		region(15700);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(4);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CRONDIS_LEVEL)).thenReturn(2);
+		plugin.startUp();
+		drainCallbacks();
+		assertSame(Boss.ZEBAK, plugin.getBoss());
+		assertEquals(2, plugin.getPathLevel());
+		assertNull(plugin.getSelection());
+	}
+
+	@Test public void loadingLogoutHoppingAndRaidExitClearDisplayedPathLevel()
+	{
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.TOA_CLIENT_SCABARAS_LEVEL)).thenReturn(4);
+		for (GameState state : new GameState[]{GameState.LOADING, GameState.LOGIN_SCREEN, GameState.HOPPING})
+		{
+			region(14164);
+			gameState(GameState.LOGGED_IN);
+			tick();
+			assertEquals(4, plugin.getPathLevel());
+			gameState(state);
+			assertNull(plugin.getBoss());
+			assertEquals(-1, plugin.getPathLevel());
+			region(LOBBY);
+			gameState(GameState.LOGGED_IN);
+			tick();
+			assertNull(plugin.getBoss());
+			assertEquals(-1, plugin.getPathLevel());
+		}
 	}
 }

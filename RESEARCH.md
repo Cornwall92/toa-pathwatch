@@ -129,7 +129,8 @@ Dedicated values exist in `net.runelite.api.gameval.VarbitID`:
 
 Read with `client.getVarbitValue(VarbitID.TOA_CLIENT_HET_LEVEL)`, for example.
 `TOA_CLIENT_RAID_LEVEL` is **14380**, and is a different quantity.
-`TOA_CLIENT_CURRENT_PATH` is **14381**; this draft does not guess its enum encoding.
+`TOA_CLIENT_CURRENT_PATH` is **14381**. The native HUD script maps 0 to the nexus,
+1 to Scabaras, 2 to Het, 3 to Apmeken, 4 to Crondis; 5/6 hide both path displays.
 
 The existing Tombs of Amascut plugin reads the actual path number from the HUD:
 
@@ -139,10 +140,23 @@ The existing Tombs of Amascut plugin reads the actual path number from the HUD:
 - `NEXUS_APMEKAN_LEVEL`: **481:53** (the constant uses this spelling).
 - `NEXUS_CRONDIS_LEVEL`: **481:55**.
 
-The plugin reads the displayed current-path number, accepting only 0–6. A hidden
-or unreadable HUD produces an unknown level. Dedicated varbit IDs are
-source-verified but are not used as a fallback until their raw encoding and live
-synchronization have been compared with the HUD during a raid.
+Versions through 0.1.5 parsed the shared current-path HUD number and rejected hidden
+widgets. That loses the level when the HUD or an ancestor is hidden, and UI text can
+lag a room transition. The reference plugin instead caches individual HUD values,
+including the four nexus widgets; it does not reject hidden number widgets.
+
+Version 0.1.6 reads the boss-specific varbit directly, accepting only 0–6. Native
+`toa_hud_draw` (script 6579, revision 242) passes each raw varbit straight to
+`tostring` without a level offset. The detected template room must match the
+server's current-path ID before showing a value. A mismatch remains unknown until
+the next tick rather than displaying another path's value. Reading is independent
+of HUD visibility, invocation capture and any other plugin's widget edits.
+
+Cache 2762's varbit definitions place all these fields in varp 3592: Crondis bits
+0–2, Scabaras 3–5, Het 6–8, Apmeken 9–11, raid level 12–22 and current path 23–25.
+The current path and levels therefore update from the same packed game value.
+This confirms the encoding and avoids an assumed independent-field update order;
+live behaviour still requires user confirmation.
 
 Map instanced coordinates back to template coordinates with
 `WorldPoint.fromLocalInstance(...)` before checking the region. Guard missing
@@ -152,6 +166,8 @@ and 15696. No NPC-name guessing or repeated whole-scene scans are needed.
 
 Sources:
 
+- [Native HUD script and current-path mapping](https://github.com/runelite/cs2-scripts/blob/562463b3477faa9f850e5c3615c087f5a32fedc3/scripts/%5Bproc%2Ctoa_hud_draw%5D.cs2)
+- [Cache 2762 varbit definitions](https://archive.openrs2.org/caches/runescape/2762/archives/2/groups/14.dat)
 - [Official varbit definitions](https://github.com/runelite/runelite/blob/bb0fa42b3d9329ffe31115f1f20042c455def2e3/runelite-api/src/main/java/net/runelite/api/gameval/VarbitID.java)
 - [Existing HUD path-level tracker](https://github.com/LlemonDuck/tombs-of-amascut/blob/cec1665058a3244bf41daddc0e1f43177a0b3edf/src/main/java/com/duckblade/osrs/toa/features/PathLevelTracker.java)
 - [Existing room mappings](https://github.com/LlemonDuck/tombs-of-amascut/blob/cec1665058a3244bf41daddc0e1f43177a0b3edf/src/main/java/com/duckblade/osrs/toa/util/RaidRoom.java)

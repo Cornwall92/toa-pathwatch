@@ -66,7 +66,7 @@ public class ToaPathwatchOverlay extends OverlayPanel
 			String status = plugin.getLobbyStatus();
 			if (status == null) return null;
 			panelComponent.setPreferredSize(new Dimension(config.width(), 0));
-			panelComponent.getChildren().add(TitleComponent.builder().text("ToA Pathwatch 0.1.5").color(GOLD).build());
+			panelComponent.getChildren().add(TitleComponent.builder().text("ToA Pathwatch 0.1.6").color(GOLD).build());
 			line(status, Color.LIGHT_GRAY);
 			return super.render(graphics);
 		}

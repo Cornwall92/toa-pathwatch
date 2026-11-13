@@ -217,11 +217,14 @@ public class ToaPathwatchPlugin extends Plugin
 		showLobbyStatus = region == 13454 && partyScreenVisible();
 		boss = Boss.forRegion(region, config.showPuzzles());
 		pathLevel = -1;
-		if (boss != null && boss != Boss.WARDENS)
+		if (boss != null && boss != Boss.WARDENS
+			&& client.getVarbitValue(VarbitID.TOA_CLIENT_CURRENT_PATH) == boss.pathId)
 		{
-			Integer hud = InvocationReader.number(client.getWidget(InterfaceID.ToaHud.PATHS_LEVEL));
-			// Use the displayed level until the raw varbit encoding is verified in-game.
-			if (hud != null && hud >= 0 && hud <= 6) pathLevel = hud;
+			// toa_hud_draw displays these varbits directly. Reading the underlying value
+			// works with hidden/unloaded HUD widgets and avoids a previous room's text.
+			// Require matching room/path state while the server switches between rooms.
+			int level = client.getVarbitValue(boss.levelVarbit);
+			if (level >= 0 && level <= 6) pathLevel = level;
 		}
 	}
 
