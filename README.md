@@ -2,7 +2,7 @@
 
 ![ToA Pathwatch](icon.png)
 
-Version 0.1.4 — invocation hover descriptions and visibility controls.
+Version 0.1.5 — separate panel and popup opacity controls.
 
 A movable RuneLite panel showing the current ToA boss's selected invocations,
 active path-levelling invocations, and a static explanation of that path level's effects.
@@ -25,6 +25,11 @@ not automatically attach itself to the vanilla health bar or another plugin's ov
    is enabled by default; turn it off to disable tooltips. Turn off **Show invocations**
    to hide the entire invocation section while keeping the boss/path title and path effects.
    These display settings do not stop invocation capture or the lobby capture confirmation.
+8. **Hover popup opacity (%)** defaults to **100** (solid). **Main panel opacity (%)**
+   defaults to **-1**, keeping your existing RuneLite background opacity. Set either
+   to **0–100** for independent transparency control: 0 is transparent and 100 is solid.
+   Text stays fully visible and changes take effect immediately. Both backgrounds keep
+   your RuneLite background colour.
 
 For Jagex accounts, follow the official login guide:
 https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
@@ -34,6 +39,14 @@ The initial Plugin Hub submission was merged in
 [PR #20523](https://github.com/runelite/plugin-hub/pull/20523). Source updates need
 a separate Hub manifest update before RuneLite distributes them. Copying a JAR
 into ordinary RuneLite folders does not install it as a Hub plugin.
+
+## Changes in 0.1.5
+
+- Makes invocation hover popups opaque by default for easier reading.
+- Adds independent background opacity controls for the main panel and hover popups.
+  The main panel keeps its existing RuneLite opacity by default, including custom settings.
+- Uses a tooltip component with its own background so RuneLite's global transparency
+  does not override the popup setting. Tooltip positioning and font settings are preserved.
 
 ## Changes in 0.1.4
 
@@ -109,6 +122,9 @@ failing after 0.1.1/0.1.2; the replacement reader needs the in-game checks below
 
 ## In-game acceptance checklist
 
+- Confirm the main panel looks unchanged at its default opacity and hover popups are solid.
+- Adjust each opacity separately to 0, 50 and 100; the other window and text should remain unchanged.
+- Reset main opacity to -1 and check it follows RuneLite's background setting, including in the lobby.
 - Hover over boss, path, and optionally raid-wide invocations: each shows its own effects.
 - Toggle **Invocation hover descriptions** off/on; tooltips stop/return immediately.
 - Toggle **Show invocations** off/on; the whole section hides/returns and path effects remain.

@@ -31,4 +31,12 @@ public interface ToaPathwatchConfig extends Config
 	@Range(min = 180, max = 450)
 	@ConfigItem(keyName = "width", name = "Panel width", description = "Width of the movable reference panel", position = 6)
 	default int width() { return 260; }
+
+	@Range(min = -1, max = 100)
+	@ConfigItem(keyName = "mainOpacity", name = "Main panel opacity (%)", description = "Background opacity: -1 keeps your existing RuneLite setting, 0 is transparent, 100 is solid", position = 7)
+	default int mainOpacity() { return -1; }
+
+	@Range(min = 0, max = 100)
+	@ConfigItem(keyName = "popupOpacity", name = "Hover popup opacity (%)", description = "Background opacity for invocation descriptions: 0 is transparent, 100 is solid", position = 8)
+	default int popupOpacity() { return 100; }
 }
