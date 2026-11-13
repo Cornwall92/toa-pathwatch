@@ -2,7 +2,7 @@
 
 ![ToA Pathwatch](icon.png)
 
-Version 0.1.5 — separate panel and popup opacity controls.
+Version 0.1.6 — reliable path-level reads independent of HUD visibility.
 
 A movable RuneLite panel showing the current ToA boss's selected invocations,
 active path-levelling invocations, and a static explanation of that path level's effects.
@@ -39,6 +39,16 @@ The initial Plugin Hub submission was merged in
 [PR #20523](https://github.com/runelite/plugin-hub/pull/20523). Source updates need
 a separate Hub manifest update before RuneLite distributes them. Copying a JAR
 into ordinary RuneLite folders does not install it as a Hub plugin.
+
+## Changes in 0.1.6
+
+- Reads each boss's path level directly from the same game value used to draw the
+  native HUD, rather than parsing the shared HUD text. Hidden or unavailable HUD
+  widgets no longer prevent path-level reads.
+- Requires the server's current path to match the detected room during transitions,
+  preventing a previous room's level from being shown for the next boss.
+- Accepts path levels 0–6 and refreshes on game ticks, independently of invocation
+  capture. Wardens still have no separate path level.
 
 ## Changes in 0.1.5
 
@@ -95,8 +105,8 @@ into ordinary RuneLite folders does not install it as a Hub plugin.
   changes made while it was closed.
 - Missing/partial data produces **Not captured**, rather than a misleading empty list.
 - Enabling the plugin after entering a raid, logging out, or hopping clears the
-  invocation capture. Path effects can still be shown from the current path HUD.
-- Reads path level separately. HP/damage bonuses are path-only multipliers, not
+  invocation capture. Path effects can still be shown from the current path's game values.
+- Reads path level separately from each boss's game value. HP/damage bonuses are path-only multipliers, not
   final damage predictions or total raid/team scaling.
 - Levels 2 and 4 change mechanic tiers. Levels 5 and 6 only increase the displayed
   path scaling; they do not add another mechanic tier.
@@ -137,6 +147,8 @@ failing after 0.1.1/0.1.2; the replacement reader needs the in-game checks below
   rewards sidebar both shown and hidden, and with the cursor over an invocation.
 - Zero raid level: verify **None relevant enabled**, rather than a missing capture.
 - Walk the Path: compare the panel's path level with the game's HUD after room changes.
+- Hide the native ToA HUD and verify the path level continues to display and update.
+- Move between paths with different levels: no previous path's value should appear under the new boss.
 - Check path levels 0/1, 2/3 and 4/5/6, especially Akkha's 4/5/6 sequence lengths.
 - Change selections between consecutive raids and confirm no previous raid's list remains.
 - Disable/re-enable, logout/reconnect, hop worlds, and enable mid-raid: no stale selections.

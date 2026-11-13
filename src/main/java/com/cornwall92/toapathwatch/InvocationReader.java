@@ -2,14 +2,10 @@ package com.cornwall92.toapathwatch;
 
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import net.runelite.api.widgets.Widget;
 
 public final class InvocationReader
 {
 	static final int PARTY_BUILD_SCRIPT = 6729;
-	private static final Pattern SINGLE_NUMBER = Pattern.compile("^(?:Raid [Ll]evel:?\\s*)?(\\d+)$");
 
 	private InvocationReader() {}
 
@@ -51,21 +47,5 @@ public final class InvocationReader
 		}
 		if (count != (Integer) args[3]) return null;
 		return InvocationSelection.validate(states, (Integer) args[4]);
-	}
-
-	public static Integer number(Widget widget)
-	{
-		return readNumber(widget, SINGLE_NUMBER);
-	}
-
-	private static Integer readNumber(Widget widget, Pattern pattern)
-	{
-		if (widget == null || widget.isHidden()) return null;
-		String text = widget.getText();
-		if (text == null) return null;
-		Matcher matcher = pattern.matcher(text.replaceAll("<[^>]*>", "").trim());
-		if (!matcher.matches()) return null;
-		try { return Integer.valueOf(matcher.group(1)); }
-		catch (NumberFormatException ex) { return null; }
 	}
 }
